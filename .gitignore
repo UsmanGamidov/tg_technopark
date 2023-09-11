@@ -1,4 +1,4 @@
-.api
+*.api
 /application
 
 # Byte-compiled / optimized / DLL files
