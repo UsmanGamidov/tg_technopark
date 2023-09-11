@@ -6,7 +6,7 @@ from email_validate import validate, validate_or_fail
 import re
 import os
 from datetime import datetime, timedelta
-from api import *
+from base_cees import *
 
 bot = tg.TeleBot(tg_api)
 admin_id = adminid
