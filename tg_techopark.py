@@ -5,21 +5,19 @@ import json
 from email_validate import validate, validate_or_fail
 import re
 import os
-from datetime import datetime, timedelta
-from base_cees import *
+import requests
 
 bot = tg.TeleBot(tg_api)
 admin_id = adminid
 all_information = {}
 
-
 # Получение токена
-def get_token(message):
+def get_token():
     try:
         url = "https://api.moyklass.com/v1/company/auth/getToken"
 
         payload = json.dumps({
-            "apiKey": token_myclass
+            "apiKey": "lYRWS4JBBV1XAZlb7hcGWyxdX8Y78uLMtaoUAGgDcJzfx7jzob"
         })
         headers = {
             'Content-Type': 'application/json'
@@ -36,7 +34,7 @@ def get_token(message):
 
 
 # Наименование всех групп
-def all_name_groups(message):
+def all_name_groups():
     try:
         all_name_groups = set()
 
@@ -44,7 +42,7 @@ def all_name_groups(message):
 
         payload = {}
         headers = {
-            'x-access-token': get_token(message)
+            'x-access-token': get_token()
         }
 
         response_all_gr = requests.request("GET", url, headers=headers, data=payload)
@@ -63,7 +61,7 @@ def all_name_groups(message):
 
 
 # Все группы
-def all_groups(message):
+def all_groups():
     try:
         all_name_groups = set()
 
@@ -71,7 +69,7 @@ def all_groups(message):
 
         payload = {}
         headers = {
-            'x-access-token': get_token(message)
+            'x-access-token': get_token()
         }
 
         response_all_gr = requests.request("GET", url, headers=headers, data=payload)
@@ -294,7 +292,7 @@ def name_of_the_parent(message):
             if message.text != '/start':
                 if message.text != '/info':
                     if message.text != 'Прекратить':
-                        if len(text) == 3 or len(text) == 2:
+                        if len(text) == 3:
                             all_information["ФИО родителя"] = message.text
                             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
                             answer = types.KeyboardButton('Прекратить')
@@ -340,7 +338,7 @@ def children(message):
             if message.text != '/start':
                 if message.text != '/info':
                     if message.text != 'Прекратить':
-                        if len(text) == 3 or len(text) == 2:
+                        if len(text) == 3:
                             all_information["ФИО ребенка"] = message.text
                             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
                             answer = types.KeyboardButton('Прекратить')
@@ -484,7 +482,7 @@ def age_child1(message):
                             if int(age) >= 6:
                                 all_information["Возраст ребенка"] = message.text
                                 markup = types.InlineKeyboardMarkup(row_width=1)
-                                for i in all_name_groups(message):
+                                for i in all_name_groups():
                                     callback_button = types.InlineKeyboardButton(i, callback_data=i)
                                     markup.add(callback_button)
                                 bot.send_message(message.chat.id, "Программа обучения", reply_markup=markup)
@@ -511,17 +509,17 @@ def age_child1(message):
 @bot.callback_query_handler(func=lambda call: True)
 def call_back_main(call):
     try:
-        for i in all_name_groups(call.message):
+        for i in all_name_groups():
             if call.data == i:
                 all_information["Программа обучения"] = i
                 new_program(call.message, i)
-        for i in all_groups(call.message):
+        for i in all_groups():
             temp = i.split()
             if call.data == temp[0] + '' + temp[1]:
                 all_information["День недели"] = temp[1]
                 new_program_time(call.message, temp)
                 break
-        for i in all_groups(call.message):
+        for i in all_groups():
             temp = i.split()
             if len(temp) == 6:
                 if call.data == temp[0] + ' ' + temp[1] + ' ' + temp[2]:
@@ -539,10 +537,8 @@ def call_back_main(call):
                 markup = types.InlineKeyboardMarkup(row_width=1)
                 fio = all_information["ФИО родителя"]
                 accept = types.InlineKeyboardButton('Принять заявку', callback_data='!' + fio)
-                with open(f'/tg_techno/main/application/{fio}.txt', 'w', encoding='utf-8') as f:
-                    f.write('\n'.join(list(all_information.values())) + '\n')
-                    f.write(call.message.chat.first_name + '\n')
-                    f.write(call.message.chat.username + '\n')
+                with open(f'C:/Users/qwe/main_project/telegram/application/{fio}.txt', 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(list(all_information.values())))
                 markup.add(accept)
                 bot.send_message(admin_id, f"Поступила заявка от *{call.message.chat.first_name}* ! \n"
                                            f"Его username = @{call.message.chat.username} \n"
@@ -591,7 +587,7 @@ def new_program(message, name_group):
                     if message.text != 'Прекратить':
                         markup = types.InlineKeyboardMarkup(row_width=1)
                         temp_check_list = []
-                        for i in all_groups(message):
+                        for i in all_groups():
                             temp = i.split()
                             if name_group == temp[0]:
                                 if temp[1] not in temp_check_list:
@@ -622,7 +618,7 @@ def new_program_time(message, all_info_group):
                 if message.text != '/info':
                     if message.text != 'Прекратить':
                         markup = types.InlineKeyboardMarkup(row_width=1)
-                        for i in all_groups(message):
+                        for i in all_groups():
                             temp = i.split()
                             if len(temp) == 6:
                                 if temp[0] == all_info_group[0] and temp[1] == all_info_group[1]:
@@ -660,151 +656,128 @@ def new_program_time(message, all_info_group):
 
 def accept_fuc(message, fio):
     # try:
-        temp_info = []
-        with open(f'/tg_techno/main/application/{fio}.txt', 'r', encoding='utf-8') as f:
-            for i in f:
-                temp_info.append(i.split('\n')[0])
+    #     # Списко учеников
+    #
+    #     url = "https://api.moyklass.com/v1/company/users"
+    #
+    #     payload = {}
+    #     headers = {
+    #         'x-access-token': get_token()
+    #     }
+    #
+    #     response_students = requests.request("GET", url, headers=headers, data=payload)
+    #     response_students_py = json.loads(response_students.text)
+    #     students_list = []
+    #
+    #     for i in range(0, len(response_students_py['users'])):
+    #         students_list.append(response_students_py['users'][i]['name'])
+    #
+    #     # Добовление ученика
+    #
+    #     temp_info = []
+    #     with open(f'C:/Users/qwe/main_project/telegram/application/{fio}.txt', 'r', encoding='utf-8') as f:
+    #         for i in f:
+    #             temp_info.append(i.split('\n')[0])
+    #     if (temp_info[1] not in students_list):
+    #         url = "https://api.moyklass.com/v1/company/users"
+    #
+    #         payload = json.dumps({
+    #             "name": temp_info[1],
+    #             "email": temp_info[2],
+    #             "phone": temp_info[3],
+    #             "responsibleId": 12322,
+    #             "advSourceId": 129625,
+    #             "createSourceId": 1,
+    #             "clientStateId": 96785,
+    #             "filials": [
+    #                 23686
+    #             ],
+    #             "responsibles": [
+    #                 55125
+    #             ],
+    #             "attributes": [
+    #                 {
+    #                     "attributeId": 2,
+    #                     "value": temp_info[0]
+    #                 },
+    #                 {
+    #                     "attributeId": 14,
+    #                     "value": "true"
+    #                 }
+    #             ],
+    #         })
+    #         headers = {
+    #             'x-access-token': get_token(),
+    #             'Content-Type': 'application/json'
+    #         }
+    #
+    #         response_add_in_group = requests.request("POST", url, headers=headers, data=payload)
+    #         response_add_in_group_py = json.loads(response_add_in_group.text)
 
-        # Списко учеников
+    # Добавлени в группу
 
-        url = "https://api.moyklass.com/v1/company/users"
+    # Получение id группу
+    url = "https://api.moyklass.com/v1/company/courses?includeClasses=true"
 
-        payload = {}
-        headers = {
-            'x-access-token': get_token(message)
-        }
+    payload = {}
+    headers = {
+        'x-access-token': get_token()
+    }
 
-        response_students = requests.request("GET", url, headers=headers, data=payload)
-        response_students_py = json.loads(response_students.text)
-        students_list = []
-
-        for i in range(0, len(response_students_py['users'])):
-            students_list.append(response_students_py['users'][i]['name'])
-
-        # Добовление ученика
-
-        if temp_info[1] not in students_list:
-            url = "https://api.moyklass.com/v1/company/users"
-
-            payload = json.dumps({
-                "name": temp_info[1],
-                "email": temp_info[2],
-                "phone": temp_info[3],
-                "advSourceId": 129625,
-                "createSourceId": 1,
-                "clientStateId": 96785,
-                "filials": [
-                    23686
-                ],
-                "responsibles": [
-                    106149
-                ],
-                "attributes": [
-                    {
-                        "attributeId": 2,
-                        "value": temp_info[0]
-                    },
-                    {
-                        "attributeId": 14,
-                        "value": "true"
-                    }
-                ],
-            })
-            headers = {
-                'x-access-token': get_token(message),
-                'Content-Type': 'application/json'
-            }
-
-            response_add_in_group = requests.request("POST", url, headers=headers, data=payload)
-            response_add_in_group_py = json.loads(response_add_in_group.text)
-            print(response_add_in_group_py)
-
-            # Добавлени в группу
-
-            # Получение id группу
-            url = "https://api.moyklass.com/v1/company/courses?includeClasses=true"
-
-            payload = {}
-            headers = {
-                'x-access-token': get_token(message)
-            }
-
-            response_id_group = requests.request("GET", url, headers=headers, data=payload)
-            response_id_group_py = json.loads(response_id_group.text)
-
-            id_gruppa = 0
-            all_name_groups = set()
-            for i in range(1, len(response_id_group_py)):
-                for j in range(len(response_id_group_py[i]["classes"])):
-                    temp = response_id_group_py[i]["classes"][j]['name'].split()
-                    try:
-                        if temp[3] == 'и':
-                            temp_element = temp[0] + ' ' + temp[1] + ' ' + temp[2] + ' ' + temp[4] + ' ' + temp[
-                                6] + ' ' + \
-                                           temp[8]
-                            all_name_groups.add(temp_element)
-                        else:
-                            temp_element = temp[0] + ' ' + temp[1] + ' ' + temp[2] + ' ' + temp[4]
-                            all_name_groups.add(temp_element)
-                    except:
-                        temp_element = temp[0] + ' ' + temp[1]
-                        all_name_groups.add(temp_element)
-                    temp_element_ls = temp_element.split()
-                    if temp_element_ls[0] == temp_info[5] and temp_element_ls[1] == temp_info[6] \
-                            and f'{temp_element_ls[2]} группа: {temp_element_ls[3]}' == temp_info[7]:
-                        id_gruppa = response_id_group_py[i]["classes"][j]['id']
-
-            url = "https://api.moyklass.com/v1/company/joins"
+    response_id_group = requests.request("GET", url, headers=headers, data=payload)
+    response_id_group_py = json.loads(response_id_group.text)
+    for i in all_groups():
+        temp = i.split()
+        if temp[0] == all_information['Программа обучения'] and temp[1] == all_information['День недели']\
+                and f'{temp[2]} группа: {temp[3]}' == all_information['Время']:
             print(1)
-            payload = json.dumps({
-                "userId": response_add_in_group_py['id'],
-                "classId": id_gruppa,
-                "price": 0,
-                "statusId": 42106,
-                "autoJoin": True,
-                "managerId": 106149,
-                "advSourceId": 129626,
-                "createSourceId": 1,
-                "params": {
-                    "invoice": {
-                        "autoCreate": True,
-                        "createRule": "setStatus",
-                        "joinStateId": [],
-                        "payDateDays": 3,
-                        "payDateType": "retative"
-                    }
-                }
-            })
-            print(2)
-            headers = {
-                'Content-Type': 'application/json',
-                'x-access-token': get_token(message)
-            }
+            print(temp)
 
-            response = requests.request("POST", url, headers=headers, data=payload)
+    # url = "https://api.moyklass.com/v1/company/joins"
+    #
+    # payload = json.dumps({
+    #     "userId": response_add_in_group_py['id'],
+    #     "classId": 170192,
+    #     "price": 0,
+    #     "statusId": 42106,
+    #     "statusChangeReasonId": null,
+    #     "autoJoin": True,
+    #     "remindDate": null,
+    #     "remindSum": null,
+    #     "managerId": 106149,
+    #     "comment": null,
+    #     "advSourceId": 129626,
+    #     "createSourceId": 1,
+    #     "params": {
+    #         "invoice": {
+    #             "autoCreate": true,
+    #             "createRule": "setStatus",
+    #             "joinStateId": [],
+    #             "payDateDays": 3,
+    #             "payDateType": "relative"
+    #         }
+    #     }
+    # })
+    # headers = {
+    #     'Content-Type': 'application/json',
+    #     'x-access-token': get_token()
+    #       }
+    #
+    # response = requests.request("POST", url, headers=headers, data=payload)
+    #
+    # print(response.text)
 
-            bot.edit_message_text(chat_id=admin_id, message_id=message.message_id, text=
-            f'*Заявка успешно ПРИЯНЯТА ✅❗✅❗✅* \n'
-            f'Поступила заявка от *{temp_info[8]}* ! \n'
-            f'Его username = @{temp_info[9]} \n'
-            f'Заявка: \n'
-            f'ФИО родителя: *{temp_info[0]}* \n'
-            f'ФИО ребенка: *{temp_info[1]}* \n'
-            f'email: *{temp_info[2]}* \n'
-            f'Номер родителя: *{temp_info[3]}* \n'
-            f'Возраст ребенка: *{temp_info[4]}* \n'
-            f'Программа обучения: *{temp_info[5]}*\n'
-            f'День недели: *{temp_info[6]}* \n'
-            f'Время: *{temp_info[7]}* \n', parse_mode='Markdown')
-            os.remove(f'/tg_techno/main/application/{fio}.txt')
-        else:
-            bot.send_message(admin_id, 'Данный ребенок уже есть в базе')
-            os.remove(f'/tg_techno/main/application/{fio}.txt')
-    # except BaseException as e:
-    #     print(e)
-    #     print(1)
-    #     bot.send_message(message.chat.id, "Что-то пошло не так, попробуйте позже")
-    #     bot.send_message(admin_id, f"Что-то пошло не так, попробуйте позже {e}")
+
+bot.send_message(admin_id, "Заявка успешно добавлена")
+
+
+# else:
+# bot.send_message(admin_id, 'Данный ребенок уже есть в базе')
+# os.remove(f'C:/Users/qwe/main_project/telegram/application/{fio}.txt')
+# except BaseException as e:
+#     print(e)
+#     bot.send_message(message.chat.id, "Что-то пошло не так, попробуйте позже")
+#     bot.send_message(admin_id, f"Что-то пошло не так, попробуйте позже {e}")
 
 
 def confidentiality(message):
