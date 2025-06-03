@@ -36,12 +36,13 @@
 
 1. Установи зависимости:
 ```bash
+git clone https://github.com/UsmanGamidov/tg_technopark
 pip install pyTelegramBotAPI
 ```
 
 2. Запусти бота:
 ```bash
-python main.py
+python tg_technopark.py
 ```
 
 > Убедись, что токены и настройки указаны в `config.py`
